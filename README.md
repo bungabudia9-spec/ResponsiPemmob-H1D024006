@@ -1,6 +1,6 @@
-# Aplikasi Cuaca Flutter (SkyWeather)
+# 🌦️ Aplikasi Cuaca Flutter (SkyWeather)
 
-Aplikasi cuaca berbasis Flutter (Dart) yang dikembangkan untuk keperluan responsi kuliah. Aplikasi ini menggunakan arsitektur MVVM (Model-View-ViewModel) dengan state management Provider dan penyimpanan lokal SharedPreferences.
+Aplikasi cuaca berbasis Flutter (Dart) yang dikembangkan untuk memenuhi tugas **Responsi Praktikum Pemrograman Mobile**. Aplikasi ini mengimplementasikan pola arsitektur **MVVM (Model-View-ViewModel)** dengan state management **Provider** dan penyimpanan lokal **SharedPreferences**.
 
 ---
 
@@ -12,33 +12,56 @@ Aplikasi cuaca berbasis Flutter (Dart) yang dikembangkan untuk keperluan respons
 
 ---
 
-## 🏗️ Struktur Folder dan Arsitektur MVVM
+## 📖 DOKUMENTASI RINGKAS APLIKASI
 
-Aplikasi ini memisahkan logika bisnis, tampilan, dan sumber data ke dalam beberapa direktori:
+### 1. 🏗️ Struktur Aplikasi & Pola Arsitektur MVVM
 
-- **lib/models/**: Berisi struktur data Dart (`Location`, `WeatherData`, `CurrentWeather`, `DailyForecast`) yang memetakan respons JSON dari API.
-- **lib/services/**: Berisi layanan jaringan untuk melakukan HTTP GET request ke Open-Meteo API (`WeatherService` dan `GeocodingService`).
-- **lib/repositories/**: Mengelola penyimpanan lokal menggunakan `SharedPreferences` (`LocationRepository`) untuk menyimpan lokasi favorit, riwayat pencarian, dan lokasi terakhir yang dipilih.
-- **lib/viewmodels/**: Berisi logika aplikasi yang diturunkan dari `ChangeNotifier` (`WeatherViewModel` dan `SearchViewModel`). ViewModel bertindak sebagai perantara antara View dan Service/Repository.
-- **lib/views/**: Berisi antarmuka pengguna (`HomeScreen`, `SearchScreen`, `FavoriteScreen`, `DetailForecastScreen`, `OnboardingScreen`). View hanya mendengarkan state dari ViewModel dan memicu fungsi di ViewModel tanpa memanggil service secara langsung.
-- **lib/widgets/**: Komponen UI yang dapat digunakan kembali (*reusable widgets*) seperti kartu informasi cuaca, item perkiraan harian, dan item lokasi.
-- **lib/theme/**: Pengaturan tema Material 3 (`AppTheme`).
+Aplikasi SkyWeather menerapkan arsitektur **MVVM (Model-View-ViewModel)** untuk menjaga pemisahan tanggung jawab (*separation of concerns*) antara antarmuka pengguna, logika bisnis, dan sumber data:
+
+```text
+lib/
+├── models/         # [MODEL] Pemetaan data JSON dari API ke objek Dart
+├── services/       # [SERVICE] Komunikasi jaringan REST API (HTTP GET)
+├── repositories/   # [REPOSITORY] Pengelolaan penyimpanan data lokal (SharedPreferences)
+├── viewmodels/     # [VIEWMODEL] Logika bisnis & pengelola State (ChangeNotifier)
+├── views/          # [VIEW] Antarmuka antarmuka pengguna (UI Screens)
+├── widgets/        # [WIDGETS] Komponen UI reusable (Cards, Headers, Tiles)
+├── theme/          # [THEME] Konfigurasi warna & tipografi Material 3
+└── main.dart       # Entry Point & Registrasi Provider
+```
+
+#### Alur Penerapan MVVM:
+1. **Model (`lib/models/`)**: Memuat kelas data Dart (`Location`, `WeatherData`, `CurrentWeather`, `DailyForecast`). Masing-masing dilengkapi dengan `fromJson()` untuk konversi data dari server API.
+2. **Service (`lib/services/`)**: `GeocodingService` dan `WeatherService` bertugas melakukan *networking* menggunakan metode HTTP GET.
+3. **Repository (`lib/repositories/`)**: `LocationRepository` bertugas membaca dan menyimpan data lokal (`SharedPreferences`) seperti daftar favorit, riwayat pencarian, dan lokasi terakhir yang dipilih.
+4. **ViewModel (`lib/viewmodels/`)**: `WeatherViewModel` dan `SearchViewModel` bertindak sebagai perantara yang memproses logika bisnis dan mengelola state aplikasi. Menggunakan `ChangeNotifier` dan memanggil `notifyListeners()` untuk memberi tahu UI saat terjadi perubahan state.
+5. **View (`lib/views/`)**: Layar UI (`HomeScreen`, `SearchScreen`, `FavoriteScreen`, `DetailForecastScreen`, `OnboardingScreen`). **View tidak pernah memanggil API secara langsung**, melainkan mendengarkan state dari ViewModel menggunakan widget `Consumer`.
 
 ---
 
-## 🌐 Implementasi API (Open-Meteo)
+### 2. 🌐 Implementasi API (Open-Meteo REST API)
 
-Aplikasi menggunakan Open-Meteo REST API secara gratis tanpa kunci API (*API Key*):
+Aplikasi terhubung langsung secara real-time ke **Open-Meteo REST API** gratis tanpa kunci API (*API Key*):
 
-1. **Geocoding API**:
-   - Endpoint: `https://geocoding-api.open-meteo.com/v1/search`
-   - Parameter: `name` (nama kota), `count=10`, `language=id`, `format=json`.
-   - Digunakan pada `GeocodingService` untuk mencari koordinat lintang dan bujur berdasarkan nama kota.
+#### A. Geocoding API (Pencarian Kota)
+- **Endpoint**: `https://geocoding-api.open-meteo.com/v1/search`
+- **Metode**: `HTTP GET`
+- **Parameter**: 
+  - `name`: Kata kunci nama kota yang dicari.
+  - `count=10`: Membatasi maksimal 10 hasil.
+  - `language=id`: Bahasa nama wilayah dalam Bahasa Indonesia.
+  - `format=json`: Format respon server.
+- **Fungsi**: Mengubah teks nama kota yang diinput pengguna menjadi daftar objek `Location` yang memuat koordinat lintang (*latitude*) dan bujur (*longitude*).
 
-2. **Weather Forecast API**:
-   - Endpoint: `https://api.open-meteo.com/v1/forecast`
-   - Parameter: `latitude`, `longitude`, `current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m`, `daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code`, `timezone=auto`.
-   - Digunakan pada `WeatherService` untuk mengambil data cuaca terkini dan prakiraan harian.
+#### B. Weather Forecast API (Data Cuaca Terkini & Prakiraan)
+- **Endpoint**: `https://api.open-meteo.com/v1/forecast`
+- **Metode**: `HTTP GET`
+- **Parameter**:
+  - `latitude` & `longitude`: Koordinat lokasi kota terpilih.
+  - `current`: Meminta data cuaca terkini (`temperature_2m`, `relative_humidity_2m`, `apparent_temperature`, `precipitation`, `weather_code`, `wind_speed_10m`).
+  - `daily`: Meminta data prakiraan harian (`temperature_2m_max`, `temperature_2m_min`, `precipitation_probability_max`, `weather_code`).
+  - `timezone=auto`: Penyesuaian zona waktu otomatis sesuai koordinat lokasi.
+- **Fungsi**: Mengambil informasi cuaca lengkap terkini dan prakiraan harian 7 hari ke depan.
 
 ---
 
